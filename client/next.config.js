@@ -1,7 +1,7 @@
-// const path = require('path');
+const path = require('path');
 
-// module.exports = {
-//   sassOption: {
-//     includePaths: [path.resolve(__dirmame, './pages')],
-//   },
-// };
+module.exports = {
+  sassOptions: {
+    includePaths: [path.resolve(__dirname, './pages')],
+  },
+};

@@ -1,5 +1,5 @@
 const MsgItem = ({ userId, timestamp, text }) => (
-  <li className="messages_item">
+  <li className="messages__item">
     <h3>
       {userId}
       {''}
