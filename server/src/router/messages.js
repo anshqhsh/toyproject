@@ -72,13 +72,13 @@ const messagesRoute = [
     //  DELETE MESSAGES
     method: 'delete',
     route: '/messages/:id',
-    handler: ({ body, params: { id } }, res) => {
+    // client에서 Params로 보내는 값이 query로 받게됨
+    handler: ({ body, params: { id }, query: { userId } }, res) => {
       try {
         const msgs = getMsgs();
         const targetIndex = msgs.findIndex(msg => msg.id === id);
         if (targetIndex < 0) throw '메세지가 없습니다.';
-        if (msgs[targetIndex].userId !== body.userId)
-          throw '사용자가 다릅니다.';
+        if (msgs[targetIndex].userId !== userId) throw '사용자가 다릅니다.';
 
         msgs.splice(targetIndex, 1);
         setMsgs(msgs);
