@@ -1,15 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import MsgItem from './MsgItem';
 import MsgInput from './MsgInput';
 import fetcher from '../fetcher';
+import useInfiniteScroll from '../hooks/useInfiniteScroll';
 
 const MsgList = () => {
-  const {
-    query: { userId = '' },
-  } = useRouter(); // userId 식별 - http://localhost:3000/?userId=joon
+  const { query } = useRouter(); // userId 식별 - http://localhost:3000/?userId=joon
+  const userId = query.userId || query.userid || ''; // 대소문자
   const [msgs, setMsgs] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [hasNext, setHasNext] = useState(true); // 마지막
+  const fetchMoreEl = useRef(null); //무한 스크롤 구현 이 div가 화면에 나오면 다음 부분을 불러 와라
+  const intersecting = useInfiniteScroll(fetchMoreEl); // 화면상에 div태그가 들어오면 true / false
 
   const onCreate = async text => {
     const newMsg = await fetcher('post', '/messages', { text, userId });
@@ -48,17 +51,26 @@ const MsgList = () => {
   };
 
   const getMessages = async () => {
-    const msgs = await fetcher('get', '/messages');
-    setMsgs(msgs);
+    const newMsgs = await fetcher('get', '/messages', {
+      params: { cursor: msgs[msgs.length - 1]?.id || '' }, // 현제 데이터의 마지막 id값
+    });
+    // 마지막값
+    if (newMsgs.length === 0) {
+      setHasNext(false);
+      return;
+    }
+    setMsgs(msgs => [...msgs, ...newMsgs]);
   };
   // 최초 접속시 동작 useEffect 내부에서는 async await를 직접 호출 하지 않음
+
+  // intersacting이 true일때 재호출 && 마지막
   useEffect(() => {
-    getMessages();
-  }, []);
+    if (intersecting && hasNext) getMessages();
+  }, [intersecting]);
 
   return (
     <>
-      <MsgInput mutate={onCreate} />
+      {userId && <MsgInput mutate={onCreate} />}
       <ul className="messages">
         {msgs.map(x => (
           <MsgItem
@@ -72,6 +84,7 @@ const MsgList = () => {
           />
         ))}
       </ul>
+      <div ref={fetchMoreEl} />{' '}
     </>
   );
 };

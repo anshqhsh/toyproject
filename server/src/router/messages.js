@@ -5,12 +5,13 @@ const getMsgs = () => readDB('messages');
 const setMsgs = data => writeDB('messages', data);
 const messagesRoute = [
   {
-    //  GET MESSAGES
+    // GET MESSAGES
     method: 'get',
     route: '/messages',
-    handler: (req, res) => {
+    handler: ({ query: { cursor = '' } }, res) => {
       const msgs = getMsgs();
-      res.send(msgs);
+      const fromIndex = msgs.findIndex(msg => msg.id === cursor) + 1;
+      res.send(msgs.slice(fromIndex, fromIndex + 15));
     },
   },
   {
@@ -34,16 +35,21 @@ const messagesRoute = [
     method: 'post',
     route: '/messages',
     handler: ({ body }, res) => {
-      const msgs = getMsgs();
-      const newMsg = {
-        id: v4(), // uuid
-        text: body.text,
-        userId: body.userId,
-        timestamp: Date.now(),
-      };
-      msgs.unshift(newMsg);
-      setMsgs(msgs);
-      res.send(newMsg);
+      try {
+        if (!body.userId) throw Error('no userId');
+        const msgs = getMsgs();
+        const newMsg = {
+          id: v4(), // uuid
+          text: body.text,
+          userId: body.userId,
+          timestamp: Date.now(),
+        };
+        msgs.unshift(newMsg);
+        setMsgs(msgs);
+        res.send(newMsg);
+      } catch (err) {
+        res.status(500).send({ error: err });
+      }
     },
   },
   {
