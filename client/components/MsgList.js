@@ -5,10 +5,11 @@ import MsgInput from './MsgInput';
 import fetcher from '../fetcher';
 import useInfiniteScroll from '../hooks/useInfiniteScroll';
 
-const MsgList = () => {
+const MsgList = ({ smsgs, users }) => {
+  console.log(smsgs);
   const { query } = useRouter(); // userId 식별 - http://localhost:3000/?userId=joon
   const userId = query.userId || query.userid || ''; // 대소문자
-  const [msgs, setMsgs] = useState([]);
+  const [msgs, setMsgs] = useState(smsgs);
   const [editingId, setEditingId] = useState(null);
   const [hasNext, setHasNext] = useState(true); // 마지막
   const fetchMoreEl = useRef(null); //무한 스크롤 구현 이 div가 화면에 나오면 다음 부분을 불러 와라
@@ -67,7 +68,7 @@ const MsgList = () => {
   useEffect(() => {
     if (intersecting && hasNext) getMessages();
   }, [intersecting]);
-
+  console.log('render');
   return (
     <>
       {userId && <MsgInput mutate={onCreate} />}
@@ -81,6 +82,7 @@ const MsgList = () => {
             startEdit={() => setEditingId(x.id)} // edit 하는 아이디값을 set
             isEditing={editingId === x.id} // true / false
             myId={userId}
+            user={users[x.userId]}
           />
         ))}
       </ul>
