@@ -5,13 +5,13 @@ const messageSchema = gql`
   type Message {
     id: ID!
     text: String!
-    user: User!
+    userId: ID!
     timestamp: Float #13자리 숫자
   }
 
   extend type Query {
-    messages(cursor: ID): [Message!]! # = getMessages 커서는 필수x 메세지 필수, 배열 형태 
-    messages(idL ID!) : Message # = getMessage
+    messages: [Message!]! # = getMessages 커서는 필수x 메세지 필수, 배열 형태
+    message(id: ID!): Message! # = getMessage
   }
 
   extend type Mutation {

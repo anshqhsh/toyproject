@@ -1,18 +1,16 @@
 import express from 'express';
-import { readDB } from './dbController.js';
-import resolvers from './resolvers/index.js';
 import { ApolloServer } from 'apollo-server-express';
-import messagesRoute from './router/messages.js';
-import userRoute from './router/user.js';
+import resolvers from './resolvers/index.js';
+import schema from './schema/index.js';
+import { readDB } from './dbController.js';
 
 const server = new ApolloServer({
   typeDefs: schema,
   resolvers,
-  // 참초데이터
   context: {
     db: {
       messages: readDB('messages'),
-      messages: readDB('users'),
+      users: readDB('users'),
     },
   },
 });
@@ -23,10 +21,10 @@ server.applyMiddleware({
   app,
   path: '/graphql',
   cors: {
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://studio.apollographql.com'],
     credentials: true,
   },
 });
 
-await app.listen({ port: 8000 });
-console.log('server listening on 8080');
+await app.listen({ port: 8080 });
+console.log('server listening on 8000...');
