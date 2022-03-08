@@ -11,8 +11,12 @@ const Home = ({ smsgs, users }) => (
 );
 
 export const getServerSideProps = async () => {
-  const { messages: smsgs } = await fetcher(GET_MESSAGES);
-  const { users } = await fetcher(GET_USERS);
+  // 병렬 DB구조
+  const [{ messages: smsgs }, { users }] = await Promise.all([
+    fetcher(GET_MESSAGES),
+    fetcher(GET_USERS),
+  ]);
+
   return {
     props: { smsgs, users },
   };
