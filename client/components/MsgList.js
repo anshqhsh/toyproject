@@ -1,74 +1,99 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { useMutation, useQuery, useQueryClient } from 'react-query';
 import MsgItem from './MsgItem';
 import MsgInput from './MsgInput';
-import fetcher from '../fetcher';
-import useInfiniteScroll from '../hooks/useInfiniteScroll';
+import { fetcher, QueryKeys } from '../queryClient';
+import {
+  GET_MESSAGES,
+  CREATE_MESSAGE,
+  UPDATE_MESSAGE,
+  DELETE_MESSAGE,
+} from '../graphql/message';
+// import useInfiniteScroll from '../hooks/useInfiniteScroll';
 
 const MsgList = ({ smsgs, users }) => {
-  console.log(smsgs);
-  const { query } = useRouter(); // userId 식별 - http://localhost:3000/?userId=joon
-  const userId = query.userId || query.userid || ''; // 대소문자
+  const client = useQueryClient(); // 클라이언트 캐쉬정보를 업데이트
+  const {
+    query: { userId = '' },
+  } = useRouter(); // userId 식별 - http://localhost:3000/?userId=joon
+
   const [msgs, setMsgs] = useState(smsgs);
   const [editingId, setEditingId] = useState(null);
-  const [hasNext, setHasNext] = useState(true); // 마지막
-  const fetchMoreEl = useRef(null); //무한 스크롤 구현 이 div가 화면에 나오면 다음 부분을 불러 와라
-  const intersecting = useInfiniteScroll(fetchMoreEl); // 화면상에 div태그가 들어오면 true / false
 
-  const onCreate = async text => {
-    const newMsg = await fetcher('post', '/messages', { text, userId });
-    if (!newMsg) throw Error('something wrong');
-    setMsgs(msgs => [newMsg, ...msgs]);
-  };
-
-  const doneEdit = () => {
-    setEditingId(null);
-  };
-
-  const onUpdate = async (text, id) => {
-    const newMsg = await fetcher('put', `/messages/${id}`, { text, userId });
-    if (!newMsg) throw Error('something wrong');
-    setMsgs(msgs => {
-      const targetIndex = msgs.findIndex(msg => msg.id === id);
-      if (targetIndex < 0) return msgs;
-      const newMsgs = [...msgs];
-      newMsgs.splice(targetIndex, 1, newMsg);
-      return newMsgs;
-    });
-    doneEdit();
-  };
-
-  const onDelete = async id => {
-    const receivedId = await fetcher('delete', `/messages/${id}`, {
-      params: { userId },
-    });
-    setMsgs(msgs => {
-      const targetIndex = msgs.findIndex(msg => msg.id === receivedId + ''); // json db에서 숫자형과 문자열의 문제
-      if (targetIndex < 0) return msgs;
-      const newMsg = [...msgs];
-      newMsg.splice(targetIndex, 1);
-      return newMsg;
-    });
-  };
-
-  const getMessages = async () => {
-    const newMsgs = await fetcher('get', '/messages', {
-      params: { cursor: msgs[msgs.length - 1]?.id || '' }, // 현제 데이터의 마지막 id값
-    });
-    // 마지막값
-    if (newMsgs.length === 0) {
-      setHasNext(false);
-      return;
+  //  CREATE
+  const { mutate: onCreate } = useMutation(
+    ({ text }) => fetcher(CREATE_MESSAGE, { text, userId }),
+    {
+      onSuccess: ({ createMessage }) => {
+        client.setQueryData(QueryKeys.MESSAGES, old => {
+          return {
+            messages: [createMessage, ...old.messages],
+          };
+        });
+      },
     }
-    setMsgs(msgs => [...msgs, ...newMsgs]);
-  };
-  // 최초 접속시 동작 useEffect 내부에서는 async await를 직접 호출 하지 않음
+  );
 
-  // intersacting이 true일때 재호출 && 마지막
+  //  UPDATE
+  const { mutate: onUpdate } = useMutation(
+    ({ text, id }) => fetcher(UPDATE_MESSAGE, { text, id, userId }),
+    {
+      onSuccess: ({ updateMessage }) => {
+        client.setQueryData(QueryKeys.MESSAGES, old => {
+          const targetIndex = old.messages.findIndex(
+            msg => msg.id === updateMessage.id
+          );
+          if (targetIndex < 0) return old;
+          const newMsgs = [...old.messages];
+          newMsgs.splice(targetIndex, 1, updateMessage);
+          return { messages: newMsgs };
+        });
+        doneEdit();
+      },
+    }
+  );
+  //  DELETE
+  const { mutate: onDelete } = useMutation(
+    id => fetcher(DELETE_MESSAGE, { id, userId }),
+    {
+      onSuccess: ({ deleteMessage: deletedId }) => {
+        client.setQueryData(QueryKeys.MESSAGES, old => {
+          const targetIndex = old.messages.findIndex(
+            msg => msg.id === deletedId
+          );
+          if (targetIndex < 0) return old;
+          const newMsgs = [...old.messages];
+          newMsgs.splice(targetIndex, 1);
+          return { messages: newMsgs };
+        });
+      },
+    }
+  );
+
+  const doneEdit = () => setEditingId(null);
+
+  //  GET
+  const { data, error, isError } = useQuery(QueryKeys.MESSAGES, () =>
+    fetcher(GET_MESSAGES)
+  );
+
   useEffect(() => {
-    if (intersecting && hasNext) getMessages();
-  }, [intersecting]);
-  console.log('render');
+    if (!data?.messages) return;
+    console.log('msgs changed');
+    setMsgs(data.messages);
+  }, [data?.messages]);
+
+  if (isError) {
+    console.error(error);
+    return null;
+  }
+
+  // // intersacting이 true일때 재호출 && 마지막
+  // useEffect(() => {
+  //   if (intersecting && hasNext) getMessages();
+  // }, [intersecting]);
+
   return (
     <>
       {userId && <MsgInput mutate={onCreate} />}
@@ -82,11 +107,11 @@ const MsgList = ({ smsgs, users }) => {
             startEdit={() => setEditingId(x.id)} // edit 하는 아이디값을 set
             isEditing={editingId === x.id} // true / false
             myId={userId}
-            user={users[x.userId]}
+            user={users.find(x => userId === x.id)}
           />
         ))}
       </ul>
-      <div ref={fetchMoreEl} />{' '}
+      {/* <div ref={fetchMoreEl} />{' '} */}
     </>
   );
 };

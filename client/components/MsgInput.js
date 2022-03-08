@@ -7,7 +7,7 @@ const MsgInput = ({ mutate, id = undefined, text = '' }) => {
     e.stopPropagation(); // 이벤트 버블링 제어
     const text = textRef.current.value;
     textRef.current.value = '';
-    mutate(text, id);
+    mutate({ text, id });
   };
   return (
     <form className="messages__input" onSubmit={onSubmit}>

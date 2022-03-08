@@ -27,4 +27,4 @@ server.applyMiddleware({
 });
 
 await app.listen({ port: 8080 });
-console.log('server listening on 8000...');
+console.log('server listening on 8080...');
