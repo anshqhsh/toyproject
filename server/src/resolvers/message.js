@@ -9,8 +9,8 @@ const setMsgs = data => writeDB('messages', data);
 const messageResolver = {
   Query: {
     // 무한 스크롤 구현
-    messages: (parent, { cusor = '' }, { db }) => {
-      const fromIndex = db.messages.findIndex(msg => msg.id === cusor) + 1; // Infinite Scroll
+    messages: (parent, { cursor = '' }, { db }) => {
+      const fromIndex = db.messages.findIndex(msg => msg.id === cursor) + 1; // Infinite Scroll
       return db.messages?.slice(fromIndex, fromIndex + 15) || []; // 배열이 없으면 빈배열 반환
     },
     message: (parent, { id = '' }, { db }) => {
@@ -50,6 +50,9 @@ const messageResolver = {
       setMsgs(db.messages);
       return id;
     },
+  },
+  Message: {
+    user: (msg, args, { db }) => db.users[msg.userId],
   },
 };
 

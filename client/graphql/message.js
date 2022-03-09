@@ -1,11 +1,14 @@
 import gql from 'graphql-tag';
 
 export const GET_MESSAGES = gql`
-  query GET_MESSAGES {
-    messages {
+  query GET_MESSAGES($cursor: ID) {
+    messages(cursor: $cursor) {
       id
       text
-      userId
+      user {
+        id
+        nickname
+      }
       timestamp
     }
   }
@@ -16,8 +19,11 @@ export const GET_MESSAGE = gql`
     message(id: $id) {
       id
       text
-      userId
       timestamp
+      user {
+        id
+        nickname
+      }
     }
   }
 `;
@@ -27,7 +33,10 @@ export const CREATE_MESSAGE = gql`
     createMessage(text: $text, userId: $userId) {
       id
       text
-      userId
+      user {
+        id
+        nickname
+      }
       timestamp
     }
   }
@@ -38,7 +47,10 @@ export const UPDATE_MESSAGE = gql`
     updateMessage(id: $id, text: $text, userId: $userId) {
       id
       text
-      userId
+      user {
+        id
+        nickname
+      }
       timestamp
     }
   }

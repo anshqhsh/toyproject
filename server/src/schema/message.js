@@ -6,11 +6,12 @@ const messageSchema = gql`
     id: ID!
     text: String!
     userId: ID!
+    user: User!
     timestamp: Float #13자리 숫자
   }
 
   extend type Query {
-    messages: [Message!]! # = getMessages 커서는 필수x 메세지 필수, 배열 형태
+    messages(cursor: ID): [Message!]! # = getMessages 커서는 필수x 메세지 필수, 배열 형태
     message(id: ID!): Message! # = getMessage
   }
 
