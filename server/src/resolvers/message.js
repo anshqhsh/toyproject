@@ -52,7 +52,7 @@ const messageResolver = {
     },
   },
   Message: {
-    user: (msg, arg, { db }) => db.users[msg.userId],
+    user: (msg, args, { db }) => db.users[msg.userId],
   },
 };
 
